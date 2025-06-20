@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>학생 생활지도</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    h2 { color: #333; }
+    input, button { margin: 5px 0; width: 100%; padding: 8px; }
+    .tab { display: none; }
+    .active { display: block; }
+  </style>
+</head>
+<body>
+  <h2>📋 학생 생활지도 앱</h2>
+
+  <button onclick="showTab('input')">입력 탭</button>
+  <button onclick="showTab('view')">조회 탭</button>
+
+  <div id="input" class="tab active">
+    <h3>학생 상태 입력</h3>
+    <input id="date" type="date" placeholder="날짜">
+    <input id="period" placeholder="교시">
+    <input id="stuId" placeholder="학번">
+    <input id="name" placeholder="이름">
+    <input id="status" placeholder="상태 내용">
+    <button onclick="saveData()">저장</button>
+    <p id="saveMsg"></p>
+  </div>
+
+  <div id="view" class="tab">
+    <h3>학생 상태 조회</h3>
+    <input id="queryId" placeholder="조회할 학번">
+    <button onclick="queryData()">조회</button>
+    <div id="result"></div>
+  </div>
+
+  <script>
+    function showTab(tabId) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+    }
+
+    function saveData() {
+      const data = {
+        date: document.getElementById('date').value,
+        period: document.getElementById('period').value,
+        stuId: document.getElementById('stuId').value,
+        name: document.getElementById('name').value,
+        status: document.getElementById('status').value
+      };
+      google.script.run.withSuccessHandler(() => {
+        document.getElementById('saveMsg').innerText = "✅ 저장 완료!";
+      }).save(data);
+    }
+
+    function queryData() {
+      const id = document.getElementById('queryId').value;
+      google.script.run.withSuccessHandler(displayResults).query(id);
+    }
+
+    function displayResults(data) {
+      const container = document.getElementById('result');
+      if (data.length === 0) {
+        container.innerHTML = "<p>📭 기록이 없습니다.</p>";
+        return;
+      }
+      container.innerHTML = data.map(d => 
+        `<p>[${d.date} ${d.period}교시] ${d.name}: ${d.status}</p>`
+      ).join("");
+    }
+  </script>
+</body>
+</html>
