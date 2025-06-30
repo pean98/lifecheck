@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width,initial-scale=1,user-scalable=yes">
+  <title>학생 생활지도 앱</title>
+  <style>
+    /* 전체 꽉 채우고, 스크롤은 container 에만 */
+    html, body { height:100%;margin:0;overflow:hidden; }
+    #container {
+      position:fixed;inset:0;
+      overflow-y:auto;-webkit-overflow-scrolling:touch;
+      background:#eaf6ff;
+      display:flex;flex-direction:column;align-items:center;
+      box-sizing:border-box;padding:1vh 0;
+    }
+    /* 탭 */
+    .tabs { display:flex;width:100%; }
+    .tab-btn {
+      flex:1;padding:1.5vh 0;
+      font-size:4vw;
+      border:none;background:#fff;color:#444;
+      cursor:pointer;
+    }
+    .tab-btn.active { background:#4eaaff;color:#fff; }
+    /* 패널 */
+    .tab-panel { display:none;width:100%; }
+    .tab-panel.active { display:block; }
+    /* 카드(폼) */
+    .card {
+      background:#fff;
+      width:96vw;
+      margin:2vh 0;
+      padding:2vh 4vw;
+      border-radius:2vh;
+      box-shadow:0 2px 12px rgba(0,0,0,0.1);
+      box-sizing:border-box;
+    }
+    .form-group { margin-bottom:2vh; }
+    label {
+      display:block;margin-bottom:1vh;
+      font-size:3.5vw;color:#4e7cbf;
+    }
+    input, select {
+      width:100%;
+      padding:2vh 3vw;
+      font-size:4vw;
+      border:1px solid #ccd8e8;
+      border-radius:1.5vh;
+      box-sizing:border-box;
+    }
+    .submit {
+      width:100%;
+      padding:2.5vh 0;
+      margin-top:1vh;
+      font-size:4.5vw;
+      color:#fff;
+      background:#4eaaff;
+      border:none;
+      border-radius:2vh;
+      cursor:pointer;
+    }
+    .result-card {
+      background:#f0f8ff;
+      padding:2vh 3vw;
+      margin-top:1vh;
+      border-radius:1.5vh;
+      font-size:3.8vw;
+      box-sizing:border-box;
+    }
+    /* 헤더 */
+    .header {
+      width:100%;padding:2vh 0;text-align:center;
+    }
+    .header h2 {
+      margin:0;font-size:6vw;color:#4eaaff;
+      font-weight:800;
+    }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <!-- 헤더 -->
+    <div class="header">
+      <h2>학생 생활지도 앱</h2>
+    </div>
+    <!-- 탭 -->
+    <div class="tabs">
+      <button id="btnInput" class="tab-btn active"
+              onclick="showTab('input')">입력</button>
+      <button id="btnView"  class="tab-btn"
+              onclick="showTab('view')">조회</button>
+    </div>
+
+    <!-- 입력 탭 -->
+    <div id="input" class="tab-panel active">
+      <div class="card">
+        <div class="form-group">
+          <label for="date">날짜</label>
+          <input id="date" type="date">
+        </div>
+        <div class="form-group">
+          <label for="period">교시</label>
+          <input id="period" placeholder="교시">
+        </div>
+        <div class="form-group">
+          <label for="stuId">학번</label>
+          <input id="stuId" placeholder="학번">
+        </div>
+        <div class="form-group">
+          <label for="name">이름</label>
+          <input id="name" placeholder="이름">
+        </div>
+        <div class="form-group">
+          <label for="status">상태</label>
+          <select id="status">
+            <option>수업 방해</option>
+            <option>수업중 화장실</option>
+            <option>보건실</option>
+            <option>교복 미착용</option>
+          </select>
+        </div>
+        <button class="submit" onclick="saveData()">저장</button>
+      </div>
+    </div>
+
+    <!-- 조회 탭 -->
+    <div id="view" class="tab-panel">
+      <div class="card">
+        <div class="form-group">
+          <label for="queryId">학번</label>
+          <input id="queryId" placeholder="조회할 학번">
+        </div>
+        <div class="form-group">
+          <label for="queryDate">날짜</label>
+          <input id="queryDate" type="date">
+        </div>
+        <button class="submit" onclick="queryData()">조회</button>
+        <div id="result"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function showTab(id) {
+      document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+      document.getElementById('btn'+capitalize(id)).classList.add('active');
+      document.getElementById(id).classList.add('active');
+      if(id==='view') {
+        document.getElementById('result').innerHTML='';
+        document.getElementById('queryId').value='';
+        document.getElementById('queryDate').value='';
+      }
+    }
+    function saveData() {
+      google.script.run.withSuccessHandler(()=>{
+        alert('✅ 저장 완료!');
+        ['date','period','stuId','name'].forEach(id=>document.getElementById(id).value='');
+        document.getElementById('status').selectedIndex=0;
+      }).save({
+        date:   document.getElementById('date').value,
+        period: document.getElementById('period').value,
+        stuId:  document.getElementById('stuId').value,
+        name:   document.getElementById('name').value,
+        status: document.getElementById('status').value
+      });
+    }
+    function queryData() {
+      var id=document.getElementById('queryId').value.trim(),
+          dt=document.getElementById('queryDate').value;
+      if(!id||!dt){ return alert('학번과 날짜를 입력하세요'); }
+      google.script.run.withSuccessHandler(function(data){
+        var html = data.length
+          ? data.map(function(d){
+              return '<div class="result-card">['+
+                     d.date+' '+d.period+'교시] '+
+                     d.name+' – '+d.status+
+                     '</div>';
+            }).join('')
+          : '<div class="result-card">📭 기록이 없습니다.</div>';
+        document.getElementById('result').innerHTML = html;
+      }).queryByDate(id,dt);
+    }
+    function capitalize(s){return s[0].toUpperCase()+s.slice(1);}
+  </script>
+</body>
+</html>
